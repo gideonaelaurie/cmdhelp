@@ -10,22 +10,27 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    # 1. Install Tkinter using GitHub's native environment to prevent sudo blocks
+    # 1. Install Tkinter using GitHub's native environment
     - name: Install System Dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y python3-tk
 
-    # 2. Build the snap using the standard workflow arguments flag
-    - uses: snapcore/action-build@v1
-      id: snapcraft
-      with:
-        snapcraft-args: --destructive-mode
+    # 2. Install Snapcraft cleanly without container rules
+    - name: Set Up Snapcraft Engine
+      run: |
+        sudo snap install snapcraft --classic
 
-    # 3. Publish directly to the stable channel
+    # 3. Compile the snap natively (bypasses the broken action wrapper)
+    - name: Build Snap Package
+      run: |
+        sudo snapcraft pack --destructive-mode
+
+    # 4. Publish directly to the stable storefront channel
     - uses: snapcore/action-publish@v1
       env:
         SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_TOKEN }}
       with:
-        snap: ${{ steps.snapcraft.outputs.snap }}
+        # Automatically detects the built file in the workspace
+        snap: ${{ github.workspace }}/*.snap
         release: stable
