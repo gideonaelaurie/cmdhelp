@@ -12,7 +12,8 @@ jobs:
     - uses: snapcore/action-build@v1
       id: snapcraft
       with:
-        build-args: --destructive-mode
+        # Changed 'build-args' to 'snapcraft-args' to fix the compilation error
+        snapcraft-args: --destructive-mode
     - uses: snapcore/action-publish@v1
       env:
         SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_TOKEN }}
