@@ -9,7 +9,7 @@ confinement: strict
 base: core24
 
 apps:
-  cmdhelp-gideon:
+  cmdhelp:
     command: bin/python3 $SNAP/cmdhelp.py
     plugs:
       - desktop
