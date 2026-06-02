@@ -1,5 +1,5 @@
 name: cmdhelp
-version: '1.0.3'
+version: '1.0.4'
 summary: Command finder tool with Tkinter GUI
 description: |
   A utility that finds terminal commands built with Python and Tkinter.
