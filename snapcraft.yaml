@@ -19,7 +19,7 @@ apps:
 
 parts:
   cmdhelp-code:
-    plugin: python
+    plugin: dump
     source: .
     stage-packages:
       - python3-tk
