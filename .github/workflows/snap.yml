@@ -1,3 +1,5 @@
+
+
 name: Release Stable Snap
 on:
   push:
@@ -10,27 +12,46 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    # 1. Install Tkinter using GitHub's native environment
-    - name: Install System Dependencies
+    # 1. Structure the required Snap filesystem manually 
+    - name: Prepare Package Blueprint Layout
       run: |
-        sudo apt-get update
-        sudo apt-get install -y python3-tk
+        mkdir -p prime/meta
+        mkdir -p prime/bin
+        cp cmdhelp.py prime/bin/cmdhelp.py
 
-    # 2. Install Snapcraft cleanly without container rules
-    - name: Set Up Snapcraft Engine
+    # 2. Write the compiled runtime metadata into a production snap.yaml sheet
+    - name: Compile Runtime Metadata Sheet
       run: |
-        sudo snap install snapcraft --classic
+        cat << 'EOF' > prime/meta/snap.yaml
+        name: cmdhelp
+        version: '1.0.9'
+        summary: Desktop helper tool with Tkinter GUI
+        description: |
+          A helpful desktop utility tool built with Python and Tkinter.
+        confinement: strict
+        grade: stable
+        base: core24
+        architectures:
+          - amd64
+        apps:
+          cmdhelp:
+            command: bin/python3 $SNAP/bin/cmdhelp.py
+            plugs:
+              - desktop
+              - desktop-legacy
+              - x11
+              - wayland
+        EOF
 
-    # 3. Compile the snap natively (bypasses the broken action wrapper)
-    - name: Build Snap Package
+    # 3. Use the system tool to bundle the workspace into a valid package
+    - name: Pack Production Snap
       run: |
-        sudo snapcraft pack --destructive-mode
+        sudo snap pack prime --filename=cmdhelp_1.0.9_amd64.snap
 
     # 4. Publish directly to the stable storefront channel
     - uses: snapcore/action-publish@v1
       env:
         SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_TOKEN }}
       with:
-        # Automatically detects the built file in the workspace
-        snap: ${{ github.workspace }}/*.snap
+        snap: cmdhelp_1.0.9_amd64.snap
         release: stable
