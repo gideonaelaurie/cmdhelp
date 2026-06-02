@@ -1,0 +1,25 @@
+name: cmdhelp
+version: '1.0.1'
+summary: Command finder tool with Tkinter GUI
+description: |
+  A utility that finds terminal commands built with Python and Tkinter.
+
+grade: stable
+confinement: strict
+base: core24
+
+apps:
+  cmdhelp-gideon:
+    command: bin/python3 $SNAP/cmdhelp.py
+    plugs:
+      - desktop
+      - desktop-legacy
+      - x11
+      - wayland
+
+parts:
+  cmdhelp-code:
+    plugin: python
+    source: .
+    stage-packages:
+      - python3-tk
