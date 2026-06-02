@@ -2,6 +2,7 @@ name: Release Stable Snap
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:          # <--- Add this exact line here
 
 jobs:
   build:
