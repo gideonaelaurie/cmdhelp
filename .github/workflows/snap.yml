@@ -9,11 +9,20 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v4
+
+    # 1. Install Tkinter using GitHub's native environment to prevent sudo blocks
+    - name: Install System Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y python3-tk
+
+    # 2. Build the snap using the standard workflow arguments flag
     - uses: snapcore/action-build@v1
       id: snapcraft
       with:
-        # Changed 'build-args' to 'snapcraft-args' to fix the compilation error
         snapcraft-args: --destructive-mode
+
+    # 3. Publish directly to the stable channel
     - uses: snapcore/action-publish@v1
       env:
         SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_TOKEN }}
