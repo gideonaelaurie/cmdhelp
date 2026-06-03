@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Version 1.1.1 Stable Release
+# Version 1.2.1 Stable Release
 import tkinter as tk
 from tkinter import scrolledtext
 import subprocess
