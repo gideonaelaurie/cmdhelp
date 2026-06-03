@@ -1,5 +1,3 @@
-
-
 name: Release Stable Snap
 on:
   push:
@@ -12,55 +10,14 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    # 1. Pull down the native system tools needed to make an official SquashFS image
-    - name: Install System Dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y squashfs-tools
+    # 1. Build an official, validated SquashFS binary image using the cloud compiler
+    - uses: snapcore/action-build@v1
+      id: snapcraft
 
-    # 2. Map the required filesystem structure
-    - name: Prepare Package Blueprint Layout
-      run: |
-        mkdir -p prime/meta
-        mkdir -p prime/bin
-        cp cmdhelp.py prime/bin/cmdhelp.py
-        chmod +x prime/bin/cmdhelp.py
-
-    # 3. Create the direct production metadata config profile block
-    - name: Compile Runtime Metadata Sheet
-      run: |
-        cat << 'EOF' > prime/meta/snap.yaml
-        name: cmdhelp
-        version: '1.2.1'              # Bumped version to break out of the 1.0.3 loop
-        summary: Desktop helper tool with Tkinter GUI
-        description: |
-          A helpful desktop utility tool built with Python and Tkinter.
-        confinement: strict
-        grade: stable
-        base: core24
-        architectures:
-          - amd64
-        apps:
-          cmdhelp:
-            command: bin/python3 $SNAP/bin/cmdhelp.py
-            plugs:
-              - desktop
-              - desktop-legacy
-              - x11
-              - wayland
-        EOF
-
-    # 4. Pack the directories into a standard compliant SquashFS .snap image
-    - name: Pack Production Snap
-      run: |
-        mksquashfs prime cmdhelp_1.2.1_amd64.snap -noappend -comp xz
-
-    # 5. Push the compiled asset up to the storefront endpoint API
-    - name: Push Package to Store Database
+    # 2. Upload the official compilation file directly to your storefront slot
+    - uses: snapcore/action-publish@v1
       env:
-        STORE_AUTH: ${{ secrets.SNAPCRAFT_TOKEN }}
-      run: |
-        curl -X POST -H "Authorization: Bearer $STORE_AUTH" \
-          -F "snap=@cmdhelp_1.2.1_amd64.snap" \
-          -F "channels=stable" \
-          https://snapcraft.io
+        SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_TOKEN }}
+      with:
+        snap: ${{ steps.snapcraft.outputs.snap }}
+        release: stable
