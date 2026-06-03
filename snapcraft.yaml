@@ -1,5 +1,5 @@
 name: cmdhelp
-version: '1.1.1'              # Advanced key index to trigger a clean tracking pull
+version: '1.1.5'              # Advanced key index to trigger a clean tracking pull
 summary: Command finder tool with Tkinter GUI
 description: |
   A command finder tool built with Python and Tkinter.
