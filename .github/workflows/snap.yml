@@ -1,3 +1,5 @@
+
+
 name: Release Stable Snap
 on:
   push:
@@ -10,12 +12,13 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    # 1. Pull down the native system tools needed to make an official SquashFS image
     - name: Install System Dependencies
       run: |
-        sudo apt-get clean
-        sudo apt-get update --fix-missing
-        sudo apt-get install -y --fix-missing python3-tk squashfs-tools
+        sudo apt-get update
+        sudo apt-get install -y squashfs-tools
 
+    # 2. Map the required filesystem structure
     - name: Prepare Package Blueprint Layout
       run: |
         mkdir -p prime/meta
@@ -23,11 +26,12 @@ jobs:
         cp cmdhelp.py prime/bin/cmdhelp.py
         chmod +x prime/bin/cmdhelp.py
 
+    # 3. Create the direct production metadata config profile block
     - name: Compile Runtime Metadata Sheet
       run: |
         cat << 'EOF' > prime/meta/snap.yaml
         name: cmdhelp
-        version: '1.2.0'              # Bumped to 1.2.0 to force a clean store revision slot
+        version: '1.2.1'              # Bumped version to break out of the 1.0.3 loop
         summary: Desktop helper tool with Tkinter GUI
         description: |
           A helpful desktop utility tool built with Python and Tkinter.
@@ -46,23 +50,17 @@ jobs:
               - wayland
         EOF
 
+    # 4. Pack the directories into a standard compliant SquashFS .snap image
     - name: Pack Production Snap
-      shell: python
       run: |
-        import lzma
-        import os
-        os.system("tar -cf prime.tar -C prime .")
-        with open("prime.tar", "rb") as f_in:
-            with lzma.open("cmdhelp_1.2.0_amd64.snap", "wb") as f_out:
-                f_out.write(f_in.read())
+        mksquashfs prime cmdhelp_1.2.1_amd64.snap -noappend -comp xz
 
-    # Direct cloud store upload bypassing the broken action-publish plugin
+    # 5. Push the compiled asset up to the storefront endpoint API
     - name: Push Package to Store Database
       env:
         STORE_AUTH: ${{ secrets.SNAPCRAFT_TOKEN }}
       run: |
         curl -X POST -H "Authorization: Bearer $STORE_AUTH" \
-          -F "snap=@cmdhelp_1.2.0_amd64.snap" \
+          -F "snap=@cmdhelp_1.2.1_amd64.snap" \
           -F "channels=stable" \
           https://snapcraft.io
-
