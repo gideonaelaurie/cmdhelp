@@ -1,3 +1,4 @@
+
 name: Release Stable Snap
 on:
   push:
@@ -10,7 +11,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    # Consolidated step with fallback flags to clear out exit code 100 loops
     - name: Install System Dependencies
       run: |
         sudo apt-get clean
@@ -19,15 +19,20 @@ jobs:
 
     - name: Prepare Package Blueprint Layout
       run: |
+        # Creates the required root hooks and meta files folders
         mkdir -p prime/meta
         mkdir -p prime/bin
+        mkdir -p prime/snap
+        
+        # Copies your code exactly where the launcher expects it
         cp cmdhelp.py prime/bin/cmdhelp.py
+        chmod +x prime/bin/cmdhelp.py
 
     - name: Compile Runtime Metadata Sheet
       run: |
         cat << 'EOF' > prime/meta/snap.yaml
         name: cmdhelp
-        version: '1.1.1'              # Bumped layout string index
+        version: '1.1.2'              # Bumped to clear the store cache
         summary: Desktop helper tool with Tkinter GUI
         description: |
           A helpful desktop utility tool built with Python and Tkinter.
@@ -48,12 +53,11 @@ jobs:
 
     - name: Pack Production Snap
       run: |
-        mksquashfs prime cmdhelp_1.1.1_amd64.snap -noappend -comp xz
+        mksquashfs prime cmdhelp_1.1.2_amd64.snap -noappend -comp xz
 
     - uses: snapcore/action-publish@v1
       env:
         SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_TOKEN }}
       with:
-        snap: cmdhelp_1.1.1_amd64.snap
+        snap: cmdhelp_1.1.2_amd64.snap
         release: stable
-
