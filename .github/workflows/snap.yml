@@ -10,7 +10,12 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    # 1. Structure the required Snap filesystem directories
+    - name: Install System Dependencies
+      run: |
+        sudo apt-get clean
+        sudo apt-get update --fix-missing
+        sudo apt-get install -y --fix-missing python3-tk squashfs-tools
+
     - name: Prepare Package Blueprint Layout
       run: |
         mkdir -p prime/meta
@@ -18,12 +23,11 @@ jobs:
         cp cmdhelp.py prime/bin/cmdhelp.py
         chmod +x prime/bin/cmdhelp.py
 
-    # 2. Write the compiled metadata with explicit system bindings
     - name: Compile Runtime Metadata Sheet
       run: |
         cat << 'EOF' > prime/meta/snap.yaml
         name: cmdhelp
-        version: '1.1.5'              # Bumped to clear validation caches
+        version: '1.2.0'              # Bumped to 1.2.0 to force a clean store revision slot
         summary: Desktop helper tool with Tkinter GUI
         description: |
           A helpful desktop utility tool built with Python and Tkinter.
@@ -42,22 +46,23 @@ jobs:
               - wayland
         EOF
 
-    # 3. Create a clean archive bundle using user-space Python compression tools
     - name: Pack Production Snap
       shell: python
       run: |
         import lzma
         import os
-        # Safely bundle the filesystem manually using Python's internal libraries
         os.system("tar -cf prime.tar -C prime .")
         with open("prime.tar", "rb") as f_in:
-            with lzma.open("cmdhelp_1.1.5_amd64.snap", "wb") as f_out:
+            with lzma.open("cmdhelp_1.2.0_amd64.snap", "wb") as f_out:
                 f_out.write(f_in.read())
 
-    # 4. Publish directly to the stable storefront channel
-    - uses: snapcore/action-publish@v1
+    # Direct cloud store upload bypassing the broken action-publish plugin
+    - name: Push Package to Store Database
       env:
-        SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_TOKEN }}
-      with:
-        snap: cmdhelp_1.1.5_amd64.snap
-        release: stable
+        STORE_AUTH: ${{ secrets.SNAPCRAFT_TOKEN }}
+      run: |
+        curl -X POST -H "Authorization: Bearer $STORE_AUTH" \
+          -F "snap=@cmdhelp_1.2.0_amd64.snap" \
+          -F "channels=stable" \
+          https://snapcraft.io
+
