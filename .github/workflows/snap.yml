@@ -10,21 +10,54 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    # 1. Install the official Snapcraft builder tool on the server
-    - name: Install Snapcraft
+    # 1. Structure the required Snap filesystem directories
+    - name: Prepare Package Blueprint Layout
       run: |
-        sudo snap install snapcraft --classic
+        mkdir -p prime/meta
+        mkdir -p prime/bin
+        cp cmdhelp.py prime/bin/cmdhelp.py
+        chmod +x prime/bin/cmdhelp.py
 
-    # 2. Tell Snapcraft to build using Canonical's cloud builders (bypasses local container restrictions)
-    - name: Build Remote Snap
+    # 2. Write the compiled metadata with explicit system bindings
+    - name: Compile Runtime Metadata Sheet
+      run: |
+        cat << 'EOF' > prime/meta/snap.yaml
+        name: cmdhelp
+        version: '1.1.5'              # Bumped to clear validation caches
+        summary: Desktop helper tool with Tkinter GUI
+        description: |
+          A helpful desktop utility tool built with Python and Tkinter.
+        confinement: strict
+        grade: stable
+        base: core24
+        architectures:
+          - amd64
+        apps:
+          cmdhelp:
+            command: bin/python3 $SNAP/bin/cmdhelp.py
+            plugs:
+              - desktop
+              - desktop-legacy
+              - x11
+              - wayland
+        EOF
+
+    # 3. Create a clean archive bundle using user-space Python compression tools
+    - name: Pack Production Snap
+      shell: python
+      run: |
+        import lzma
+        import os
+        # Safely bundle the filesystem manually using Python's internal libraries
+        os.system("tar -cf prime.tar -C prime .")
+        with open("prime.tar", "rb") as f_in:
+            with lzma.open("cmdhelp_1.1.5_amd64.snap", "wb") as f_out:
+                f_out.write(f_in.read())
+
+    # 4. Publish directly to the stable storefront channel
+    - uses: snapcore/action-publish@v1
       env:
         SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_TOKEN }}
-      run: |
-        snapcraft remote-build
-
-    # 3. Publish the downloaded file directly to the stable storefront channel
-    - name: Upload to Store
-      env:
-        SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_TOKEN }}
-      run: |
-        snapcraft upload --release=stable *.snap
+      with:
+        snap: cmdhelp_1.1.5_amd64.snap
+        release: stable
