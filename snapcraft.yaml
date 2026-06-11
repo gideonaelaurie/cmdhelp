@@ -19,7 +19,7 @@ apps:
 
 parts:
   cmdhelp-code:
-    plugin: nil               # Bypasses complex container folder mappings
+    plugin: python            # Bypasses complex container folder mappings
     source: .
     stage-packages:
       - python3-tk
